@@ -1,5 +1,5 @@
 """Unit tests for DiagnosisCache — Days 26-40 production hardening."""
-import pytest, time
+import pytest, time, threading
 from chainobserver.cache import DiagnosisCache
 
 
@@ -61,3 +61,58 @@ class TestDiagnosisCache:
         data = r.json()
         assert "cache" in data
         assert "live" in data["cache"]
+
+    def test_diagnose_endpoint_returns_cached_result(self):
+        # Pre-seed the module-level singleton so the /diagnose endpoint
+        # hits the cache branch (lines 277-279 in server.py) without
+        # needing a real Gemini call.
+        from fastapi.testclient import TestClient
+        from server import app, DiagnoseResponse
+        from chainobserver.cache import _cache
+
+        fake = DiagnoseResponse(
+            tx_hash="0xcacheddeadbeef" + "0" * 48,
+            chain_id=1,
+            root_cause="cached slippage",
+            failure_type="slippage_exceeded",
+            affected_address="0xabc",
+            confidence="high",
+            fix_suggestion="increase slippage",
+            related_link="https://etherscan.io/tx/0xcached",
+            diagnosis_time_s=0.001,
+            tool_calls=0,
+            full_analysis="from cache",
+        )
+        tx = fake.tx_hash
+        _cache.set(tx, 1, fake)
+
+        client = TestClient(app)
+        r = client.post("/diagnose", json={"tx_hash": tx, "chain_id": 1})
+        # Even without GEMINI_API_KEY the cached path returns 200
+        assert r.status_code == 200
+        data = r.json()
+        assert data["root_cause"] == "cached slippage"
+        assert data["failure_type"] == "slippage_exceeded"
+        assert data["tool_calls"] == 0   # 0 proves it came from cache, not agent
+
+    def test_concurrent_writes_are_thread_safe(self):
+        c = DiagnosisCache(maxsize=1000)
+        errors: list[Exception] = []
+
+        def writer(n: int) -> None:
+            try:
+                for i in range(50):
+                    key = f"0x{n:04x}{i:058x}"
+                    c.set(key, 1, f"val-{n}-{i}")
+                    assert c.get(key, 1) == f"val-{n}-{i}"
+            except Exception as e:
+                errors.append(e)
+
+        threads = [threading.Thread(target=writer, args=(t,)) for t in range(10)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert errors == [], f"Thread errors: {errors}"
+        assert c.stats()["total"] <= 1000  # maxsize respected
