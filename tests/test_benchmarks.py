@@ -23,6 +23,7 @@ def set_rpc(monkeypatch):
     monkeypatch.setenv("ETH_RPC_URL", "https://ethereum.publicnode.com")
 
 
+@pytest.mark.network
 class TestAllTxsFailedWithStatus0:
     @pytest.mark.parametrize("tx_hash", ALL_FAILED)
     def test_status_zero(self, tx_hash):
@@ -39,6 +40,7 @@ class TestAllTxsFailedWithStatus0:
         assert r.get("etherscan_tx_url") == f"https://etherscan.io/tx/{tx_hash}"
 
 
+@pytest.mark.network
 class TestOutOfGasDetection:
     def test_oog_tx_ratio_above_98pct(self):
         from chainobserver.mcp_server import get_transaction_receipt
@@ -58,6 +60,7 @@ class TestOutOfGasDetection:
         assert "gas" in r.get("suggestion", "").lower()
 
 
+@pytest.mark.network
 class TestSlippageVariants:
     def test_tx2_insufficient_output_amount(self):
         from chainobserver.mcp_server import decode_revert_reason
@@ -75,6 +78,7 @@ class TestSlippageVariants:
         assert "insufficient" in r.get("revert_reason", "").lower()
 
 
+@pytest.mark.network
 class TestCustomErrorDecoding:
     def test_seaport_fulfilladvancedorder_decoded(self):
         from chainobserver.mcp_server import get_contract_info
@@ -91,6 +95,7 @@ class TestCustomErrorDecoding:
         assert r["status"] == 0
 
 
+@pytest.mark.network
 class TestEdgeCases:
     """Day 15: input validation, successful tx field shape, related_link."""
 
@@ -120,6 +125,7 @@ class TestEdgeCases:
             assert key in r, f"Missing: {key}"
 
 
+@pytest.mark.unit
 class TestClassificationLogic:
     """Pure unit tests — all 7 failure types parsed correctly, no network."""
 

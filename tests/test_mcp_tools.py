@@ -30,6 +30,7 @@ def set_rpc(monkeypatch):
 
 # ── Tool 1: get_transaction_receipt ──────────────────────────────────────────
 
+@pytest.mark.network
 class TestGetTransactionReceipt:
     def test_known_failed_tx_returns_status_0(self):
         from chainobserver.mcp_server import get_transaction_receipt
@@ -69,6 +70,7 @@ class TestGetTransactionReceipt:
 
 # ── Tool 2: decode_revert_reason ─────────────────────────────────────────────
 
+@pytest.mark.network
 class TestDecodeRevertReason:
     def test_allowance_failure_revert_contains_transfer_from_failed(self):
         from chainobserver.mcp_server import decode_revert_reason
@@ -101,6 +103,7 @@ class TestDecodeRevertReason:
 
 # ── Tool 3: get_contract_info ─────────────────────────────────────────────────
 
+@pytest.mark.network
 class TestGetContractInfo:
     def test_usdc_identified_as_verified(self):
         from chainobserver.mcp_server import get_contract_info
@@ -139,6 +142,7 @@ class TestGetContractInfo:
 
 # ── Tool 4: simulate_transaction ─────────────────────────────────────────────
 
+@pytest.mark.network
 class TestSimulateTransaction:
     def test_allowance_is_deterministic_revert(self):
         from chainobserver.mcp_server import simulate_transaction
@@ -168,6 +172,7 @@ class TestSimulateTransaction:
 
 # ── Tool 5: get_pool_info ─────────────────────────────────────────────────────
 
+@pytest.mark.network
 class TestGetPoolInfo:
     def test_weth_usdc_pool_exists(self):
         from chainobserver.mcp_server import get_pool_info
@@ -208,6 +213,7 @@ class TestGetPoolInfo:
 
 # ── Agent helpers (no network / no Gemini) ───────────────────────────────────
 
+@pytest.mark.unit
 class TestAgentHelpers:
     def test_extract_json_block_basic(self):
         from chainobserver.agent import _extract_json_block

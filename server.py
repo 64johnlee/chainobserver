@@ -221,15 +221,18 @@ async function runDiagnosis() {
 
 class DiagnoseRequest(BaseModel):
     tx_hash: str = Field(..., description="Ethereum transaction hash (0x-prefixed)")
+    chain_id: int = Field(1, description="Chain ID (1=Ethereum, 42161=Arbitrum, 8453=Base, 10=Optimism, 137=Polygon)")
 
 
 class DiagnoseResponse(BaseModel):
     tx_hash: str
+    chain_id: int
     root_cause: str
     failure_type: str
     affected_address: str
     confidence: str
     fix_suggestion: str
+    related_link: str
     diagnosis_time_s: float
     tool_calls: int
     full_analysis: str
@@ -242,7 +245,13 @@ async def landing() -> str:
 
 @app.get("/health")
 async def health() -> dict:
-    return {"status": "ok", "version": "0.1.0", "service": "chainobserver"}
+    from chainobserver.cache import _cache
+    return {
+        "status": "ok",
+        "version": "0.1.0",
+        "service": "chainobserver",
+        "cache": _cache.stats(),
+    }
 
 
 @app.post("/diagnose", response_model=DiagnoseResponse)
@@ -264,27 +273,37 @@ async def diagnose(request: DiagnoseRequest) -> DiagnoseResponse:
             detail="GEMINI_API_KEY not configured. Set the env var and restart.",
         )
 
+    from chainobserver.cache import _cache
+    cached = _cache.get(request.tx_hash, request.chain_id)
+    if cached is not None:
+        return cached
+
     agent = EthereumDiagnosisAgent(
         gemini_api_key=gemini_key,
-        eth_rpc_url=os.environ.get("ETH_RPC_URL", "https://eth.llamarpc.com"),
+        eth_rpc_url=os.environ.get("ETH_RPC_URL", "https://ethereum.publicnode.com"),
         etherscan_api_key=os.environ.get("ETHERSCAN_API_KEY", ""),
+        chain_id=request.chain_id,
         use_vertex=use_vertex,
         gcp_project=gcp_project,
     )
 
     report = await agent.diagnose(request.tx_hash)
 
-    return DiagnoseResponse(
+    response = DiagnoseResponse(
         tx_hash=report.tx_hash,
+        chain_id=request.chain_id,
         root_cause=report.root_cause,
         failure_type=report.failure_type.value,
         affected_address=report.affected_address,
         confidence=report.confidence.value,
         fix_suggestion=report.fix_suggestion,
+        related_link=report.related_link,
         diagnosis_time_s=report.diagnosis_time_s,
         tool_calls=report.tool_calls,
         full_analysis=report.full_analysis,
     )
+    _cache.set(request.tx_hash, request.chain_id, response)
+    return response
 
 
 if __name__ == "__main__":

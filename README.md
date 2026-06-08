@@ -10,57 +10,108 @@ app_port: 7860
 
 # ChainObserver
 
-**AI agent that diagnoses failed Ethereum transactions in under 30 seconds.**
+[![Tests](https://github.com/64johnlee/chainobserver/actions/workflows/test.yml/badge.svg)](https://github.com/64johnlee/chainobserver/actions/workflows/test.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![ETHGlobal Lisbon 2026](https://img.shields.io/badge/ETHGlobal-Lisbon%202026-purple)](https://ethglobal.com)
 
-Paste a transaction hash → get root cause + actionable fix, powered by Gemini 2.5 Flash and 5 custom Ethereum MCP tools.
+> **AI agent that diagnoses failed Ethereum transactions in under 30 seconds**
 
-## Try It
+Paste a failed tx hash → get root cause + fix, powered by **Gemini 2.5 Flash** and 5 custom Ethereum MCP tools. Supports mainnet, Arbitrum, Base, Optimism, and Polygon.
 
-```bash
-POST /diagnose
-{"tx_hash": "0x..."}
-```
+## Demo
 
-## What It Diagnoses
 
-| Failure Type | Example |
-|---|---|
-| `slippage_exceeded` | Uniswap swap — price moved |
-| `insufficient_balance` | ERC-20 transfer exceeds balance |
-| `insufficient_allowance` | Router not approved to spend tokens |
-| `out_of_gas` | Gas limit too low |
-| `contract_revert` | Custom Solidity error, require() |
-| `unauthorized` | Access control failure |
+
+## Supported Failure Types
+
+| Type | Signal | Example |
+|------|--------|---------|
+|  | INSUFFICIENT_OUTPUT_AMOUNT | Uniswap swap price moved |
+|  | transfer amount exceeds balance | USDC transfer |
+|  | TRANSFER_FROM_FAILED | ERC-20 approve not called |
+|  | gas_used ≥ 98% of limit | complex DeFi tx |
+|  | custom error / require() | Seaport, ParaSwap |
+|  | not owner / missing role | Access control |
+|  | low pool reserves | thin DEX pool |
+
+## Quick Start
+
+Obtaining file:///mnt/c/WINDOWS/system32
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ ChainObserver · tx 0xYOUR_TX_HASH                                            │
+│ Gemini 2.5 Flash · Ethereum MCP tools                                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+✓ Diagnosis complete in 2.5s · 0 tool calls
+
+╭────────────────────────── ChainObserver Diagnosis ───────────────────────────╮
+│  Root cause    See full analysis below                                       │
+│  Failure type  unknown                                                       │
+│  Confidence    medium                                                        │
+│  Affected      —                                                             │
+│  Fix           —                                                             │
+│  Time          2.47s · 0 tool calls                                          │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+── Full Analysis ──
+Please replace `0xYOUR_TX_HASH` with a real transaction hash. I cannot diagnose 
+the transaction without it.
+
+## API
+
+
+
+Response:
+
+
+## Supported Chains
+
+| Chain | ID | RPC Default |
+|-------|----|-------------|
+| Ethereum | 1 |  |
+| Arbitrum One | 42161 |  |
+| Base | 8453 |  |
+| Optimism | 10 |  |
+| Polygon | 137 |  |
 
 ## Architecture
 
-```
-User → FastAPI Server → Gemini 2.5 Flash (agentic loop)
-                             ↓
-                    ChainObserver MCP Server
-                    ├── get_transaction_receipt
-                    ├── decode_revert_reason
-                    ├── get_contract_info
-                    ├── simulate_transaction
-                    └── get_pool_info
-                             ↓
-                    Ethereum RPC + Etherscan + 4byte.directory
-```
+
 
 ## Benchmarks
 
-- **100% accuracy** on 4 real mainnet failed transactions
-- **21.8s average** diagnosis time
-- **3.25 tool calls** average
+**4/4 agent diagnoses correct · 21.8s avg · 3.25 tool calls**
 
-## Setup
+| TX | Type | Time | Calls |
+|----|------|------|-------|
+| Uniswap Universal Router |  | 18.6s | 3 |
+| DEX swap |  | 21.4s | 3 |
+| USDC transfer |  | 11.9s | 3 |
+| Seaport order |  | ~36s | 4 |
 
-```bash
-pip install -e .
-cp .env.example .env  # add GEMINI_API_KEY
-python server.py       # starts at http://localhost:7860
-```
+**79 tests · 8 real mainnet txs · all 7 failure types verified**
+
+## Configuration
+
+| Env Var | Required | Default | Description |
+|---------|----------|---------|-------------|
+|  | Yes | — | Gemini 2.5 Flash key |
+|  | No | publicnode | Ethereum JSON-RPC |
+|  | No | — | For full ABI lookup |
+|  | No | false | Vertex AI instead of AI Studio |
+|  | No | 7860 | Server port |
+
+## Development
+
+
 
 ## Built For
 
-ETHGlobal Lisbon 2026 — on-chain observability track.
+**ETHGlobal Lisbon 2026** — On-chain observability track.
+
+Powered by [Gemini 2.5 Flash](https://ai.google.dev/) · [MCP Protocol](https://modelcontextprotocol.io/) · web3.py
+
+---
+*Diagnose your failed transactions at [chainobserver.hf.space](https://huggingface.co/spaces/johnlee007/chainobserver)*

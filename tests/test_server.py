@@ -55,3 +55,17 @@ def test_openapi_schema(client):
     assert "ChainObserver" in schema["info"]["title"]
     assert "/diagnose" in schema["paths"]
     assert "/health" in schema["paths"]
+
+
+def test_diagnose_request_chain_id_field(client):
+    r = client.get("/openapi.json")
+    props = r.json()["components"]["schemas"]["DiagnoseRequest"]["properties"]
+    assert "chain_id" in props
+    assert props["chain_id"].get("default") == 1
+
+
+def test_diagnose_response_has_new_fields(client):
+    r = client.get("/openapi.json")
+    props = r.json()["components"]["schemas"]["DiagnoseResponse"]["properties"]
+    assert "related_link" in props
+    assert "chain_id" in props

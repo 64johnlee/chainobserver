@@ -39,6 +39,7 @@ class EthereumDiagnosisAgent:
         gemini_api_key: str = "",
         eth_rpc_url: str = "",
         etherscan_api_key: str = "",
+        chain_id: int = 1,
         use_vertex: bool = False,
         gcp_project: str = "",
         gcp_location: str = "us-central1",
@@ -49,12 +50,20 @@ class EthereumDiagnosisAgent:
             self._genai = genai.Client(api_key=gemini_api_key)
         self._eth_rpc_url = eth_rpc_url
         self._etherscan_api_key = etherscan_api_key
+        self._chain_id = chain_id
 
     async def diagnose(self, tx_hash: str) -> TxDiagnosisReport:
+        import os
+        from .chains import get_chain
+        os.environ["CHAIN_ID"] = str(self._chain_id)
+        try:
+            chain_name = get_chain(self._chain_id).name
+        except ValueError:
+            chain_name = f"chain:{self._chain_id}"
         console.print(
             Panel(
                 f"[bold cyan]ChainObserver[/] · tx [green]{tx_hash}[/]\n"
-                "[dim]Gemini 2.5 Flash · Ethereum MCP tools[/]",
+                f"[dim]Chain: {chain_name} · Gemini 2.5 Flash · MCP tools[/]",
                 border_style="cyan",
             )
         )

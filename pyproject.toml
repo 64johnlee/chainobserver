@@ -35,3 +35,7 @@ packages = ["chainobserver"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+markers = [
+    "network: requires live Ethereum RPC (deselect with -m not network)",
+    "unit: pure logic, no external calls",
+]

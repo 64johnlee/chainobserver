@@ -28,9 +28,11 @@ logger = logging.getLogger("chainobserver.mcp_server")
 
 mcp = FastMCP("chainobserver-mcp")
 
-_DEFAULT_RPC = "https://ethereum.publicnode.com"
+_DEFAULT_CHAIN_ID = 1
 
-# Uniswap V2 factory on Ethereum mainnet
+from .chains import get_chain, get_default_rpc, explorer_tx_url, explorer_address_url
+
+# Uniswap V2 factory on Ethereum mainnet (overridden per chain via chains.py)
 _UNISWAP_V2_FACTORY = "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f"
 _FACTORY_ABI = [
     {
@@ -74,16 +76,16 @@ _PAIR_ABI = [
 ]
 
 
-def _get_w3() -> Web3:
-    rpc_url = os.environ.get("ETH_RPC_URL", _DEFAULT_RPC)
+def _get_w3(chain_id: int = _DEFAULT_CHAIN_ID) -> Web3:
+    rpc_url = get_default_rpc(chain_id)
     return Web3(Web3.HTTPProvider(rpc_url, request_kwargs={"timeout": 15}))
 
 
-def _etherscan_get(params: dict[str, Any]) -> dict[str, Any]:
+def _etherscan_get(params: dict[str, Any], chain_id: int = _DEFAULT_CHAIN_ID) -> dict[str, Any]:
     api_key = os.environ.get("ETHERSCAN_API_KEY", "")
-    # Etherscan V2 API (chainid=1 for Ethereum mainnet)
-    params = {**params, "apikey": api_key, "chainid": "1"}
-    resp = httpx.get("https://api.etherscan.io/v2/api", params=params, timeout=10.0)
+    chain_cfg = get_chain(chain_id)
+    params = {**params, "apikey": api_key, "chainid": str(chain_id)}
+    resp = httpx.get(chain_cfg.etherscan_api_url, params=params, timeout=10.0)
     resp.raise_for_status()
     return resp.json()
 
@@ -148,9 +150,9 @@ def get_transaction_receipt(tx_hash: str) -> str:
         "block_number": receipt.get("blockNumber", 0),
         "input_selector": selector,
         "log_count": len(receipt.get("logs", [])),
-        "etherscan_tx_url": f"https://etherscan.io/tx/{tx_hash}",
+        "etherscan_tx_url": explorer_tx_url(int(os.environ.get("CHAIN_ID", "1")), tx_hash),
         "etherscan_contract_url": (
-            f"https://etherscan.io/address/{to_addr}"
+            explorer_address_url(int(os.environ.get("CHAIN_ID", "1")), to_addr)
             if to_addr != "(contract_creation)" else ""
         ),
     })
