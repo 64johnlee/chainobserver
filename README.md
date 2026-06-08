@@ -14,6 +14,7 @@ app_port: 7860
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![ETHGlobal Lisbon 2026](https://img.shields.io/badge/ETHGlobal-Lisbon%202026-purple)](https://ethglobal.com)
+[![Demo Video](https://img.shields.io/badge/Demo-YouTube-red)](https://youtu.be/Z5fpDfPj6fU)
 
 > **AI agent that diagnoses failed Ethereum transactions in under 30 seconds**
 
