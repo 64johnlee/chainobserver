@@ -114,4 +114,4 @@ Response:
 Powered by [Gemini 2.5 Flash](https://ai.google.dev/) · [MCP Protocol](https://modelcontextprotocol.io/) · web3.py
 
 ---
-*Diagnose your failed transactions at [chainobserver.hf.space](https://huggingface.co/spaces/johnlee007/chainobserver)*
+*Diagnose your failed transactions at [johnlee007/chainobserver](https://huggingface.co/spaces/johnlee007/chainobserver)*
