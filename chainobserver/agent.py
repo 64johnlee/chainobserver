@@ -77,7 +77,7 @@ class EthereumDiagnosisAgent:
             final_text, tool_call_count = await self._run_tool_loop(backend, tools, messages)
 
         elapsed = time.monotonic() - start
-        report = _parse_report(final_text, tx_hash)
+        report = _parse_report(final_text, tx_hash, self._chain_id)
         report.diagnosis_time_s = round(elapsed, 2)
         report.tool_calls = tool_call_count
         console.print(
@@ -216,7 +216,9 @@ def _extract_json_block(text: str) -> str | None:
     return None
 
 
-def _parse_report(text: str, tx_hash: str) -> TxDiagnosisReport:
+def _parse_report(text: str, tx_hash: str, chain_id: int = 1) -> TxDiagnosisReport:
+    from .chains import explorer_tx_url
+    link = explorer_tx_url(chain_id, tx_hash)
     raw_json = _extract_json_block(text)
     if raw_json is not None:
         try:
@@ -228,7 +230,7 @@ def _parse_report(text: str, tx_hash: str) -> TxDiagnosisReport:
                 affected_address=data.get("affected_address", ""),
                 confidence=Confidence(data.get("confidence", "medium")),
                 fix_suggestion=data.get("fix_suggestion", ""),
-                related_link=f"https://etherscan.io/tx/{tx_hash}",
+                related_link=link,
                 full_analysis=text,
             )
         except (json.JSONDecodeError, ValueError, KeyError) as exc:
@@ -237,6 +239,6 @@ def _parse_report(text: str, tx_hash: str) -> TxDiagnosisReport:
     return TxDiagnosisReport(
         tx_hash=tx_hash,
         root_cause="See full analysis below",
-        related_link=f"https://etherscan.io/tx/{tx_hash}",
+        related_link=link,
         full_analysis=text,
     )
