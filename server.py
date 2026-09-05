@@ -1,6 +1,7 @@
 """ChainObserver FastAPI server — REST API for Ethereum transaction diagnosis."""
 from __future__ import annotations
 
+import logging
 import os
 import time
 
@@ -11,6 +12,9 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 load_dotenv()
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("chainobserver.server")
 
 app = FastAPI(
     title="ChainObserver",
@@ -306,7 +310,14 @@ async def diagnose(request: DiagnoseRequest) -> DiagnoseResponse:
         gcp_project=gcp_project,
     )
 
-    report = await agent.diagnose(request.tx_hash)
+    try:
+        report = await agent.diagnose(request.tx_hash)
+    except Exception as exc:
+        logger.exception("Diagnosis failed for tx_hash=%s chain_id=%s", request.tx_hash, request.chain_id)
+        raise HTTPException(
+            status_code=502,
+            detail=f"Diagnosis failed: {type(exc).__name__}: {exc}",
+        ) from exc
 
     response = DiagnoseResponse(
         tx_hash=report.tx_hash,
@@ -358,7 +369,14 @@ async def diagnose_solana(request: SolanaDiagnoseRequest) -> SolanaDiagnoseRespo
         gcp_project=gcp_project,
     )
 
-    report = await agent.diagnose(request.signature)
+    try:
+        report = await agent.diagnose(request.signature)
+    except Exception as exc:
+        logger.exception("Solana diagnosis failed for signature=%s cluster=%s", request.signature, request.cluster)
+        raise HTTPException(
+            status_code=502,
+            detail=f"Diagnosis failed: {type(exc).__name__}: {exc}",
+        ) from exc
 
     response = SolanaDiagnoseResponse(
         signature=report.tx_hash,
