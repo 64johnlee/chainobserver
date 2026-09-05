@@ -150,7 +150,9 @@ design-time predictions]
 - **GitHub (MIT):** https://github.com/64johnlee/chainobserver
 - **Live demo (HF Space):** https://huggingface.co/spaces/johnlee007/chainobserver — TODO: verify
   the Space redeploys with Solana support before demo day (current deploy predates this branch)
-- **Demo video:** TODO — record a new segment showing Solana diagnosis (existing video is EVM-only)
+- **Demo video (Solana):** `demo/chainobserver_solana_demo.mp4` (89s, local) — real data walkthrough of
+  the live signature above. TODO: upload to YouTube (ask before public — default unlisted) and link here.
+- **Demo video (EVM):** `demo/chainobserver_demo.mp4` — original ETHGlobal Lisbon video, unchanged
 
 ---
 
@@ -179,7 +181,8 @@ citing a number in the submission.
 
 - [ ] Run a few more real Solana diagnoses to get an actual average time/tool-call count (one data
       point isn't a benchmark — see the table above)
-- [ ] Record/update the demo video to include a Solana walkthrough
+- [x] Record a Solana demo video — `demo/chainobserver_solana_demo.mp4`, real data, not fabricated
+- [ ] Upload the Solana demo video to YouTube and link it here (default unlisted per usual practice)
 - [x] Redeploy the HuggingFace Space with the Solana code path — confirmed live, both
       `/diagnose` and `/diagnose/solana` return real 200 OK diagnoses in production
 - [ ] Confirm the Colosseum project-creation form (opens with the hackathon on Sep 14) accepts this
