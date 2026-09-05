@@ -1,6 +1,6 @@
 # ChainObserver — HuggingFace Space / production requirements
 google-genai>=0.8.0
-mcp>=1.0.0
+mcp>=1.0.0,<2
 web3>=6.0.0
 fastapi>=0.110.0
 uvicorn>=0.29.0
