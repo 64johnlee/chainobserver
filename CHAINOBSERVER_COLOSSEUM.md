@@ -177,6 +177,17 @@ live on both chains. The Solana run took notably longer (86s vs 16.5s); worth a 
 see if that's typical or an outlier (rate-limit backoff, a colder RPC response, etc.) before
 citing a number in the submission.
 
+## Planned genuine contest-window work (start Sep 14, not before)
+
+Per the FAQ: "products are judged only on the work completed between the competition's start and
+end dates," and misrepresenting development history is grounds for disqualification. Everything in
+this doc as of 2026-09-05 (Solana support, error-handling fix, deps fix, demo video) is real but
+**pre-existing** relative to the Sep 14 start — to be disclosed as such in the submission form, not
+hidden. The item below is deliberately deferred so it's genuine Sep 14–Oct 12 work instead:
+
+- [ ] **Raydium/Orca pool-liquidity tool** — Solana's `get_pool_info` equivalent (the EVM agent has
+      this; Solana doesn't yet). Do NOT start before Sep 14 — starting earlier defeats the point.
+
 ## TODO before submitting on the Colosseum dashboard
 
 - [ ] Run a few more real Solana diagnoses to get an actual average time/tool-call count (one data
