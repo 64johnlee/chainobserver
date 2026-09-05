@@ -26,6 +26,14 @@ class TestDiagnosisCache:
         c.set("0xABC", 1, "val")
         assert c.get("0xabc", 1) == "val"
 
+    def test_solana_signature_is_case_sensitive(self):
+        # Base58 signatures use distinct upper/lowercase letters — lowercasing them
+        # (as EVM hex hashes are) would collide two genuinely different signatures.
+        c = DiagnosisCache()
+        c.set("aBc", "solana:mainnet-beta", "val-mixed-case")
+        assert c.get("abc", "solana:mainnet-beta") is None
+        assert c.get("aBc", "solana:mainnet-beta") == "val-mixed-case"
+
     def test_ttl_expiry(self):
         c = DiagnosisCache(ttl=0)   # instant expiry
         c.set("0xabc", 1, "val")

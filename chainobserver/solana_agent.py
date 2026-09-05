@@ -1,4 +1,4 @@
-"""ChainObserver agent — diagnoses failed Ethereum transactions using Gemini 2.5 Flash."""
+"""ChainObserver Solana agent — diagnoses failed Solana transactions using Gemini 2.5 Flash."""
 from __future__ import annotations
 
 import json
@@ -9,21 +9,18 @@ from google.genai import types
 from rich.console import Console
 from rich.panel import Panel
 
-from .backends.mcp import MCPBackend
+from .backends.solana_mcp import SolanaMCPBackend
 from .base_agent import BaseDiagnosisAgent, extract_json_block
 from .models import Confidence, FailureType, TxDiagnosisReport
-from .prompts import SYSTEM_PROMPT, build_analysis_prompt
+from .solana_prompts import SOLANA_SYSTEM_PROMPT, build_solana_analysis_prompt
 
 logger = logging.getLogger(__name__)
 console = Console()
 
-# Re-exported for backward compatibility (tests import this name from chainobserver.agent).
-_extract_json_block = extract_json_block
 
-
-class EthereumDiagnosisAgent(BaseDiagnosisAgent):
+class SolanaDiagnosisAgent(BaseDiagnosisAgent):
     """
-    Diagnoses failed Ethereum transactions using Gemini 2.5 Flash + ChainObserver MCP tools.
+    Diagnoses failed Solana transactions using Gemini 2.5 Flash + ChainObserver Solana MCP tools.
 
     Auth modes:
       - AI Studio: set gemini_api_key (or GEMINI_API_KEY env var)
@@ -33,9 +30,8 @@ class EthereumDiagnosisAgent(BaseDiagnosisAgent):
     def __init__(
         self,
         gemini_api_key: str = "",
-        eth_rpc_url: str = "",
-        etherscan_api_key: str = "",
-        chain_id: int = 1,
+        solana_rpc_url: str = "",
+        cluster: str = "mainnet-beta",
         use_vertex: bool = False,
         gcp_project: str = "",
         gcp_location: str = "us-central1",
@@ -46,38 +42,37 @@ class EthereumDiagnosisAgent(BaseDiagnosisAgent):
             gcp_project=gcp_project,
             gcp_location=gcp_location,
         )
-        self._eth_rpc_url = eth_rpc_url
-        self._etherscan_api_key = etherscan_api_key
-        self._chain_id = chain_id
+        self._solana_rpc_url = solana_rpc_url
+        self._cluster = cluster
 
-    async def diagnose(self, tx_hash: str) -> TxDiagnosisReport:
+    async def diagnose(self, signature: str) -> TxDiagnosisReport:
         import os
-        from .chains import get_chain
-        os.environ["CHAIN_ID"] = str(self._chain_id)
+        from .solana_chains import get_cluster
+        os.environ["SOLANA_CLUSTER"] = self._cluster
         try:
-            chain_name = get_chain(self._chain_id).name
+            cluster_name = get_cluster(self._cluster).name
         except ValueError:
-            chain_name = f"chain:{self._chain_id}"
+            cluster_name = f"cluster:{self._cluster}"
         console.print(
             Panel(
-                f"[bold cyan]ChainObserver[/] · tx [green]{tx_hash}[/]\n"
-                f"[dim]Chain: {chain_name} · Gemini 2.5 Flash · MCP tools[/]",
+                f"[bold cyan]ChainObserver[/] · tx [green]{signature}[/]\n"
+                f"[dim]Cluster: {cluster_name} · Gemini 2.5 Flash · Solana MCP tools[/]",
                 border_style="cyan",
             )
         )
         start = time.monotonic()
-        async with MCPBackend(self._eth_rpc_url, self._etherscan_api_key) as backend:
+        async with SolanaMCPBackend(self._solana_rpc_url) as backend:
             tools = await backend.list_tools_as_gemini()
-            prompt = build_analysis_prompt(tx_hash)
+            prompt = build_solana_analysis_prompt(signature)
             messages: list[types.Content] = [
                 types.Content(role="user", parts=[types.Part(text=prompt)])
             ]
             final_text, tool_call_count = await self._run_tool_loop(
-                backend, SYSTEM_PROMPT, tools, messages
+                backend, SOLANA_SYSTEM_PROMPT, tools, messages
             )
 
         elapsed = time.monotonic() - start
-        report = _parse_report(final_text, tx_hash, self._chain_id)
+        report = _parse_solana_report(final_text, signature, self._cluster)
         report.diagnosis_time_s = round(elapsed, 2)
         report.tool_calls = tool_call_count
         console.print(
@@ -91,15 +86,15 @@ class EthereumDiagnosisAgent(BaseDiagnosisAgent):
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _parse_report(text: str, tx_hash: str, chain_id: int = 1) -> TxDiagnosisReport:
-    from .chains import explorer_tx_url
-    link = explorer_tx_url(chain_id, tx_hash)
-    raw_json = _extract_json_block(text)
+def _parse_solana_report(text: str, signature: str, cluster: str = "mainnet-beta") -> TxDiagnosisReport:
+    from .solana_chains import explorer_tx_url
+    link = explorer_tx_url(cluster, signature)
+    raw_json = extract_json_block(text)
     if raw_json is not None:
         try:
             data = json.loads(raw_json)
             return TxDiagnosisReport(
-                tx_hash=tx_hash,
+                tx_hash=signature,
                 root_cause=data.get("root_cause", "see full analysis"),
                 failure_type=FailureType(data.get("failure_type", "unknown")),
                 affected_address=data.get("affected_address", ""),
@@ -112,7 +107,7 @@ def _parse_report(text: str, tx_hash: str, chain_id: int = 1) -> TxDiagnosisRepo
             logger.debug("Could not parse structured report: %s", exc)
 
     return TxDiagnosisReport(
-        tx_hash=tx_hash,
+        tx_hash=signature,
         root_cause="See full analysis below",
         related_link=link,
         full_analysis=text,

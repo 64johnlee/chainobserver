@@ -20,6 +20,12 @@ class FailureType(str, Enum):
     UNAUTHORIZED = "unauthorized"
     LIQUIDITY_ISSUE = "liquidity_issue"
     UNKNOWN = "unknown"
+    # Solana (SVM) specific
+    CUSTOM_PROGRAM_ERROR = "custom_program_error"
+    COMPUTE_BUDGET_EXCEEDED = "compute_budget_exceeded"
+    ACCOUNT_NOT_FOUND = "account_not_found"
+    RENT_EXEMPT_MINIMUM = "rent_exempt_minimum"
+    INSTRUCTION_ERROR = "instruction_error"
 
 
 @dataclass

@@ -19,10 +19,14 @@ class DiagnosisCache:
         self._store: dict[str, tuple[float, Any]] = {}
         self._lock = Lock()
 
-    def _cache_key(self, tx_hash: str, chain_id: int) -> str:
-        return f"{chain_id}:{tx_hash.lower()}"
+    def _cache_key(self, tx_hash: str, chain_id: int | str) -> str:
+        # EVM hex tx hashes are case-insensitive; Solana base58 signatures are
+        # case-SENSITIVE (distinct upper/lowercase letters are different characters) —
+        # lowercasing them would collide two genuinely different signatures.
+        normalized = tx_hash.lower() if isinstance(chain_id, int) else tx_hash
+        return f"{chain_id}:{normalized}"
 
-    def get(self, tx_hash: str, chain_id: int = 1) -> Any | None:
+    def get(self, tx_hash: str, chain_id: int | str = 1) -> Any | None:
         key = self._cache_key(tx_hash, chain_id)
         with self._lock:
             entry = self._store.get(key)
@@ -34,7 +38,7 @@ class DiagnosisCache:
                 return None
             return value
 
-    def set(self, tx_hash: str, chain_id: int, value: Any) -> None:
+    def set(self, tx_hash: str, chain_id: int | str, value: Any) -> None:
         key = self._cache_key(tx_hash, chain_id)
         with self._lock:
             if len(self._store) >= self._maxsize:

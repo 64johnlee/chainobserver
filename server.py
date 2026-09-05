@@ -238,6 +238,25 @@ class DiagnoseResponse(BaseModel):
     full_analysis: str
 
 
+class SolanaDiagnoseRequest(BaseModel):
+    signature: str = Field(..., description="Solana transaction signature (base58)")
+    cluster: str = Field("mainnet-beta", description="Cluster: mainnet-beta, devnet, testnet")
+
+
+class SolanaDiagnoseResponse(BaseModel):
+    signature: str
+    cluster: str
+    root_cause: str
+    failure_type: str
+    affected_address: str
+    confidence: str
+    fix_suggestion: str
+    related_link: str
+    diagnosis_time_s: float
+    tool_calls: int
+    full_analysis: str
+
+
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 async def landing() -> str:
     return _LANDING_HTML
@@ -303,6 +322,58 @@ async def diagnose(request: DiagnoseRequest) -> DiagnoseResponse:
         full_analysis=report.full_analysis,
     )
     _cache.set(request.tx_hash, request.chain_id, response)
+    return response
+
+
+@app.post("/diagnose/solana", response_model=SolanaDiagnoseResponse)
+async def diagnose_solana(request: SolanaDiagnoseRequest) -> SolanaDiagnoseResponse:
+    """Diagnose a failed Solana transaction.
+
+    Pass a base58 transaction signature. Returns root cause, failure type,
+    fix suggestion, and full Gemini analysis.
+    """
+    from chainobserver.solana_agent import SolanaDiagnosisAgent
+
+    from chainobserver.cache import _cache
+    cache_key_chain = f"solana:{request.cluster}"
+    cached = _cache.get(request.signature, cache_key_chain)
+    if cached is not None:
+        return cached
+
+    gemini_key = os.environ.get("GEMINI_API_KEY", "")
+    use_vertex = os.environ.get("USE_VERTEX", "").lower() in ("1", "true", "yes")
+    gcp_project = os.environ.get("GCP_PROJECT", "")
+
+    if not gemini_key and not use_vertex:
+        raise HTTPException(
+            status_code=503,
+            detail="GEMINI_API_KEY not configured. Set the env var and restart.",
+        )
+
+    agent = SolanaDiagnosisAgent(
+        gemini_api_key=gemini_key,
+        solana_rpc_url=os.environ.get("SOLANA_RPC_URL", "https://api.mainnet-beta.solana.com"),
+        cluster=request.cluster,
+        use_vertex=use_vertex,
+        gcp_project=gcp_project,
+    )
+
+    report = await agent.diagnose(request.signature)
+
+    response = SolanaDiagnoseResponse(
+        signature=report.tx_hash,
+        cluster=request.cluster,
+        root_cause=report.root_cause,
+        failure_type=report.failure_type.value,
+        affected_address=report.affected_address,
+        confidence=report.confidence.value,
+        fix_suggestion=report.fix_suggestion,
+        related_link=report.related_link,
+        diagnosis_time_s=report.diagnosis_time_s,
+        tool_calls=report.tool_calls,
+        full_analysis=report.full_analysis,
+    )
+    _cache.set(request.signature, cache_key_chain, response)
     return response
 
 

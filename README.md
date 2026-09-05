@@ -16,9 +16,13 @@ app_port: 7860
 [![ETHGlobal Lisbon 2026](https://img.shields.io/badge/ETHGlobal-Lisbon%202026-purple)](https://ethglobal.com)
 [![Demo Video](https://img.shields.io/badge/Demo-YouTube-red)](https://youtu.be/Z5fpDfPj6fU)
 
-> **AI agent that diagnoses failed Ethereum transactions in under 30 seconds**
+> **AI agent that diagnoses failed transactions in under 30 seconds — EVM and Solana**
 
-Paste a failed tx hash → get root cause + fix, powered by **Gemini 2.5 Flash** and 5 custom Ethereum MCP tools. Supports mainnet, Arbitrum, Base, Optimism, and Polygon.
+Paste a failed tx hash → get root cause + fix, powered by **Gemini 2.5 Flash** and a purpose-built MCP toolset per chain family:
+- **EVM** (5 tools): mainnet, Arbitrum, Base, Optimism, Polygon
+- **Solana** (4 tools): mainnet-beta, devnet, testnet — `chainobserver solana diagnose <signature>`
+
+Built for [ETHGlobal Lisbon 2026](#built-for) originally; extended for [Colosseum's Crypto World's Fair](https://colosseum.com/worldsfair) with genuine SVM support (not a port — Solana's error model, compute budget, and program logs are fundamentally different from EVM reverts/gas).
 
 ## Demo
 
@@ -110,7 +114,8 @@ Response:
 
 ## Built For
 
-**ETHGlobal Lisbon 2026** — On-chain observability track.
+**ETHGlobal Lisbon 2026** — On-chain observability track (EVM).
+**Colosseum Crypto World's Fair 2026** — Solana + Base + Ethereum L1 tracks (added Solana support).
 
 Powered by [Gemini 2.5 Flash](https://ai.google.dev/) · [MCP Protocol](https://modelcontextprotocol.io/) · web3.py
 
