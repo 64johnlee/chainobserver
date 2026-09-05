@@ -160,13 +160,27 @@ Solo submission — @64johnlee.
 
 ---
 
+## Live verification (2026-09-05)
+
+First real end-to-end runs against the deployed HF Space (`GEMINI_API_KEY` configured, `mcp<2`
+pinned to fix a FastMCP-rename subprocess crash that was blocking both endpoints):
+
+| Chain | Input | Result | Confidence | Time | Tool calls |
+|-------|-------|--------|------------|------|------------|
+| Ethereum | real mainnet Uniswap Universal Router failure | `contract_revert`, error `0x5bf6f916` | medium | 16.5s | 4 |
+| Solana | real mainnet-beta failure, program `GnZr2LD3...` | `custom_program_error`, code 6000 | high | 86.0s | 3 |
+
+n=1 per chain so far — not a benchmark table yet, just proof the full Gemini-driven loop works
+live on both chains. The Solana run took notably longer (86s vs 16.5s); worth a few more runs to
+see if that's typical or an outlier (rate-limit backoff, a colder RPC response, etc.) before
+citing a number in the submission.
+
 ## TODO before submitting on the Colosseum dashboard
 
-- [ ] Run a real diagnosis against 3-4 genuine failed Solana transactions with a live `GEMINI_API_KEY`
-      and capture actual timing/tool-call numbers (this draft intentionally has no fabricated
-      Solana benchmark table — only report numbers you've actually measured)
+- [ ] Run a few more real Solana diagnoses to get an actual average time/tool-call count (one data
+      point isn't a benchmark — see the table above)
 - [ ] Record/update the demo video to include a Solana walkthrough
-- [ ] Redeploy the HuggingFace Space with the Solana code path and confirm `/diagnose/solana` works
-      in production, not just locally
+- [x] Redeploy the HuggingFace Space with the Solana code path — confirmed live, both
+      `/diagnose` and `/diagnose/solana` return real 200 OK diagnoses in production
 - [ ] Confirm the Colosseum project-creation form (opens with the hackathon on Sep 14) accepts this
       GitHub repo, and copy the relevant sections above into it
